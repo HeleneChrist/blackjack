@@ -34,6 +34,10 @@ public class Spieler {
     }
 
     private static void bet(int bet){
+        if (isWaiting){
+            System.out.println("You have to wait for the croupier to respond.");
+            return;
+        }
         if (bet > money){
             System.out.println("You don't have enough money.");
             return;
@@ -61,6 +65,7 @@ public class Spieler {
         }
         sendLines(croupierIP, croupierPort, "bet " + name + " " + bet);
         Spieler.bet = Spieler.bet + bet;
+        isWaiting = true;
     }
 
     public static boolean isIP(String ip) { // Checks if String is valid IPv4 address
@@ -168,7 +173,7 @@ public class Spieler {
             String received = new String(p.getData(), 0, p.getLength(), StandardCharsets.UTF_8);
             System.out.println(received);
             if (received.contains("action accepted")){
-                receiveLines(port);
+                isWaiting = true;
             }
             else if (received.contains("gameover")){
                hand = new Stack<>();
@@ -184,6 +189,7 @@ public class Spieler {
                 sendLines(croupierIP, croupierPort, "prize accepted " + name);
             }
             else if (received.contains(name)){
+                System.out.println("x");
                 hand.push(Card.fromJSON(received));
                 System.out.println("You received a card: " + hand.peek().toString());
                 sendLines(croupierIP, croupierPort, "payer " + name + "received " + hand.peek().getDeck() + " " + hand.peek().toString());
