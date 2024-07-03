@@ -12,8 +12,8 @@ public class Spieler {
     private static Stack<Card> hand;
     private static int money;
     private static int bet;
-    private static int port;
-    private static String ip;
+    public static int port;
+    public static String ip;
     private static String name;
     private static String croupierIP;
     private static int croupierPort;
@@ -103,6 +103,11 @@ public class Spieler {
 
                 } else if (parts[0].equalsIgnoreCase("bet")) {
                     bet(Integer.parseInt(parts[1]));
+                } else if (parts[0].equalsIgnoreCase("hand")) {
+                    System.out.println(hand.toString());
+                } else if (parts[0].equalsIgnoreCase("money")) {
+                    System.out.println("You have: " + money);
+                    System.out.println("You have bet: " + bet);
                 } else {
                     System.out.println("Invalid input.");
                 }
