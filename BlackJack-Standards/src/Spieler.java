@@ -18,19 +18,47 @@ public class Spieler {
     private static String croupierIP;
     private static int croupierPort;
     private static boolean split = false;
-
+    private static boolean isWaiting = false;
 
     private static void play(String move){
+        if (isWaiting){
+            System.out.println("You have to wait for the croupier to respond.");
+            return;
+        }
         if (hand.isEmpty()){
             sendLines(croupierIP, croupierPort, move + " " + name + " " + "0" + " " + "0");
         }
         sendLines(croupierIP, croupierPort, move + " " + name + " " + hand.peek().getDeck()+ " " + hand.peek().toString());
-        //nicht als separater Thread, um zu verhindern, dass der Spieler mehrere Aktionen auf einmal macht
-        receiveLines(port);
+        isWaiting = true;
 
     }
 
     private static void bet(int bet){
+        if (bet > money){
+            System.out.println("You don't have enough money.");
+            return;
+        }
+        if (bet < 0){
+            System.out.println("You can't bet a negative amount.");
+            return;
+        }
+        if (bet == 0){
+            System.out.println("You can't bet 0.");
+            return;
+        }
+        if(bet > money/2){
+            System.out.println("Are you sure you want to bet more than half of your money? (yes/no)");
+            try {
+                BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+                String input = br.readLine();
+                if (input.equals("no")){
+                    return;
+                }
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+
+            }
+        }
         sendLines(croupierIP, croupierPort, "bet " + name + " " + bet);
         Spieler.bet = Spieler.bet + bet;
     }
@@ -77,6 +105,7 @@ public class Spieler {
         try(BufferedReader br = new BufferedReader(new InputStreamReader(System.in))) {
             String input;
             while (!(input = br.readLine()).equals("exit")) {
+                new Thread(() -> receiveLines(port)).start();
                 String[] parts = input.split(" ");
                 if (parts[0].equalsIgnoreCase("registerPlayer") && parts.length == 3) {
                     if (isIP(parts[1]) && isPort(parts[2])) {
@@ -135,6 +164,7 @@ public class Spieler {
             byte[] buffer = new byte[1024];
             DatagramPacket p = new DatagramPacket(buffer, buffer.length);
             s.receive(p);
+            isWaiting = false;
             String received = new String(p.getData(), 0, p.getLength(), StandardCharsets.UTF_8);
             System.out.println(received);
             if (received.contains("action accepted")){
@@ -155,6 +185,7 @@ public class Spieler {
             }
             else if (received.contains(name)){
                 hand.push(Card.fromJSON(received));
+                System.out.println("You received a card: " + hand.peek().toString());
                 sendLines(croupierIP, croupierPort, "payer " + name + "received " + hand.peek().getDeck() + " " + hand.peek().toString());
             }
         } catch (IOException e) {
